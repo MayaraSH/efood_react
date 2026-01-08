@@ -27,3 +27,10 @@ export const ProductGrid = styled.div`
     grid-template-columns: 1fr;
   }
 `
+
+export const Loading = styled.div`
+  text-align: center;
+  font-size: 18px;
+  color: ${colors.coral};
+  padding: 100px 40px;
+`

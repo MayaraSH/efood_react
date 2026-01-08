@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 
-import { Container, ProductsContainer, ProductGrid } from './styles'
+import { Container, ProductsContainer, ProductGrid, Loading } from './styles'
+import { getRestaurantById } from '../../services/api'
+import { Restaurant as RestaurantType, MenuItem } from '../../types'
 import Cart, { CartItemType } from '../../Components/Cart'
 import Checkout, { DeliveryData, PaymentData } from '../../Components/Checkout'
 import RestaurantHeader from '../../Components/RestaurantHeader'
@@ -8,87 +11,11 @@ import ProductCard from '../../Components/ProductCard'
 import Footer from '../../Components/Footer'
 import ProductModal from '../../Components/ProductModal'
 
-interface Product {
-  id: number
-  name: string
-  description: string
-  fullDescription: string // ⬅️ Descrição completa para o modal
-  image: string
-  price: number
-  serves?: string
-}
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  },
-  {
-    id: 2,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  },
-  {
-    id: 3,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  },
-  {
-    id: 4,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  },
-  {
-    id: 5,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  },
-  {
-    id: 6,
-    name: 'Pizza Marguerita',
-    description:
-      'A clássica Marguerita: molho de tomate suculento, mussarela derretida, manjericão fresco e um toque de azeite. Sabor e simplicidade!',
-    fullDescription:
-      'A pizza Margherita é uma pizza clássica da culinária italiana, reconhecida por sua simplicidade e sabor inigualável. Ela é feita com uma base de massa fina e crocante, coberta com molho de tomate fresco, queijo mussarela de alta qualidade, manjericão fresco e azeite de oliva extra-virgem. A combinação de sabores é perfeita, com o molho de tomate suculento e ligeiramente ácido, o queijo derretido e cremoso e as folhas de manjericão frescas, que adicionam um toque de sabor herbáceo. É uma pizza simples, mas deliciosa, que agrada a todos os paladares e é uma ótima opção para qualquer ocasião.',
-    image: '/images/pizza.png',
-    price: 60.9,
-    serves: 'Serve de 2 a 3 pessoas'
-  }
-]
-
 const Restaurant = () => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const { id } = useParams<{ id: string }>()
+  const [restaurant, setRestaurant] = useState<RestaurantType | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null)
   const [cartItems, setCartItems] = useState<CartItemType[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
@@ -97,7 +24,25 @@ const Restaurant = () => {
   >('delivery')
   const [orderId, setOrderId] = useState<string>('')
 
-  const handleProductClick = (product: Product) => {
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      if (!id) return
+
+      try {
+        setLoading(true)
+        const data = await getRestaurantById(id)
+        setRestaurant(data)
+      } catch (err) {
+        console.error('Erro ao carregar restaurante:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRestaurant()
+  }, [id])
+
+  const handleProductClick = (product: MenuItem) => {
     setSelectedProduct(product)
   }
 
@@ -105,12 +50,12 @@ const Restaurant = () => {
     setSelectedProduct(null)
   }
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: MenuItem) => {
     const newItem: CartItemType = {
-      id: Date.now(), // ID único baseado no timestamp
-      name: product.name,
-      price: product.price,
-      image: product.image
+      id: Date.now(),
+      name: product.nome,
+      price: product.preco,
+      image: product.foto
     }
     setCartItems([...cartItems, newItem])
     setSelectedProduct(null)
@@ -144,7 +89,6 @@ const Restaurant = () => {
 
   const handleSubmitPayment = (data: PaymentData) => {
     console.log('Payment data:', data)
-    // Simular geração de ID do pedido
     const newOrderId = `ORDER_${Math.random()
       .toString(36)
       .substr(2, 9)
@@ -160,21 +104,39 @@ const Restaurant = () => {
     setOrderId('')
   }
 
+  if (loading) {
+    return (
+      <Container>
+        <Loading>Carregando restaurante...</Loading>
+      </Container>
+    )
+  }
+
+  if (!restaurant) {
+    return (
+      <Container>
+        <Loading>Restaurante não encontrado</Loading>
+      </Container>
+    )
+  }
+
   return (
     <Container>
       <RestaurantHeader
-        category="Italiana"
-        name="La Dolce Vita Trattoria"
-        heroImage="/images/restaurant2.png"
+        category={restaurant.tipo}
+        name={restaurant.titulo}
+        heroImage={restaurant.capa}
         cartCount={cartItems.length}
         onCartClick={() => setIsCartOpen(true)}
       />
       <ProductsContainer>
         <ProductGrid>
-          {products.map((product) => (
+          {restaurant.cardapio.map((product) => (
             <ProductCard
               key={product.id}
-              {...product}
+              name={product.nome}
+              description={product.descricao}
+              image={product.foto}
               onAddToCart={() => handleProductClick(product)}
             />
           ))}
@@ -184,11 +146,11 @@ const Restaurant = () => {
 
       {selectedProduct && (
         <ProductModal
-          name={selectedProduct.name}
-          description={selectedProduct.fullDescription} // ⬅️ Usa descrição completa
-          image={selectedProduct.image}
-          serves={selectedProduct.serves}
-          price={selectedProduct.price}
+          name={selectedProduct.nome}
+          description={selectedProduct.descricao}
+          image={selectedProduct.foto}
+          serves={selectedProduct.porcao}
+          price={selectedProduct.preco}
           onClose={handleCloseModal}
           onAddToCart={() => handleAddToCart(selectedProduct)}
         />

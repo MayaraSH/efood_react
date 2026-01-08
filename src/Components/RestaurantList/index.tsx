@@ -1,69 +1,62 @@
+import { useEffect, useState } from 'react'
 import RestaurantCard from '../RestaurantCard'
-import { ListContainer, Grid } from './styles'
-
-const restaurants = [
-  {
-    id: 1,
-    name: 'Hioki Sushi',
-    rating: 4.9,
-    description:
-      'Peça já o melhor da culinária japonesa no conforto da sua casa! Sushis frescos, sashimis deliciosos e pratos quentes irresistíveis. Entrega rápida, embalagens cuidadosas e qualidade garantida. Experimente o Japão sem sair do lar com nosso delivery!',
-    image: '/images/restaurant1.png',
-    tags: ['Destaque da semana', 'Japonesa']
-  },
-  {
-    id: 2,
-    name: 'La Dolce Vita Trattoria',
-    rating: 4.6,
-    description:
-      'A La Dolce Vita Trattoria leva a autêntica cozinha italiana até você! Desfrute de massas caseiras, pizzas deliciosas e risotos incríveis, tudo no conforto do seu lar. Entrega rápida, pratos bem embalados e sabor inesquecível. Peça já!',
-    image: '/images/restaurant2.png',
-    tags: ['Italiana']
-  },
-  {
-    id: 3,
-    name: 'La Dolce Vita Trattoria',
-    rating: 4.6,
-    description:
-      'A La Dolce Vita Trattoria leva a autêntica cozinha italiana até você! Desfrute de massas caseiras, pizzas deliciosas e risotos incríveis, tudo no conforto do seu lar. Entrega rápida, pratos bem embalados e sabor inesquecível. Peça já!',
-    image: '/images/restaurant2.png',
-    tags: ['Italiana']
-  },
-  {
-    id: 4,
-    name: 'La Dolce Vita Trattoria',
-    rating: 4.6,
-    description:
-      'A La Dolce Vita Trattoria leva a autêntica cozinha italiana até você! Desfrute de massas caseiras, pizzas deliciosas e risotos incríveis, tudo no conforto do seu lar. Entrega rápida, pratos bem embalados e sabor inesquecível. Peça já!',
-    image: '/images/restaurant2.png',
-    tags: ['Italiana']
-  },
-  {
-    id: 5,
-    name: 'La Dolce Vita Trattoria',
-    rating: 4.6,
-    description:
-      'A La Dolce Vita Trattoria leva a autêntica cozinha italiana até você! Desfrute de massas caseiras, pizzas deliciosas e risotos incríveis, tudo no conforto do seu lar. Entrega rápida, pratos bem embalados e sabor inesquecível. Peça já!',
-    image: '/images/restaurant2.png',
-    tags: ['Italiana']
-  },
-  {
-    id: 6,
-    name: 'La Dolce Vita Trattoria',
-    rating: 4.6,
-    description:
-      'A La Dolce Vita Trattoria leva a autêntica cozinha italiana até você! Desfrute de massas caseiras, pizzas deliciosas e risotos incríveis, tudo no conforto do seu lar. Entrega rápida, pratos bem embalados e sabor inesquecível. Peça já!',
-    image: '/images/restaurant2.png',
-    tags: ['Italiana']
-  }
-]
+import { ListContainer, Grid, Loading, ErrorMessage } from './styles'
+import { getRestaurants } from '../../services/api'
+import { Restaurant } from '../../types'
 
 const RestaurantList = () => {
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        setLoading(true)
+        const data = await getRestaurants()
+        setRestaurants(data)
+      } catch (err) {
+        setError('Erro ao carregar restaurantes. Tente novamente mais tarde.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRestaurants()
+  }, [])
+
+  if (loading) {
+    return (
+      <ListContainer>
+        <Loading>Carregando restaurantes...</Loading>
+      </ListContainer>
+    )
+  }
+
+  if (error) {
+    return (
+      <ListContainer>
+        <ErrorMessage>{error}</ErrorMessage>
+      </ListContainer>
+    )
+  }
+
   return (
     <ListContainer>
       <Grid>
         {restaurants.map((restaurant) => (
-          <RestaurantCard key={restaurant.id} {...restaurant} />
+          <RestaurantCard
+            key={restaurant.id}
+            id={restaurant.id}
+            name={restaurant.titulo}
+            rating={restaurant.avaliacao}
+            description={restaurant.descricao}
+            image={restaurant.capa}
+            tags={[
+              ...(restaurant.destacado ? ['Destaque da semana'] : []),
+              restaurant.tipo
+            ]}
+          />
         ))}
       </Grid>
     </ListContainer>
