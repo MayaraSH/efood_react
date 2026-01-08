@@ -4,6 +4,10 @@ import { colors } from '../../styles'
 export const Card = styled.div`
   background-color: ${colors.coral};
   padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 `
 
 export const ProductImage = styled.div`
