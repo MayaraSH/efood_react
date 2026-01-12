@@ -1,3 +1,6 @@
+import { useSelector, useDispatch } from 'react-redux'
+import { RootReducer } from '../../store'
+import { close, remove } from '../../store/reducers/cart'
 import {
   CartOverlay,
   CartContainer,
@@ -11,53 +14,57 @@ import {
   CartButton
 } from './styles'
 
-export interface CartItemType {
-  id: number
-  name: string
-  price: number
-  image: string
-}
-
 interface CartProps {
-  isOpen: boolean
-  items: CartItemType[]
-  onClose: () => void
-  onRemoveItem: (id: number) => void
   onContinue: () => void
 }
 
-const Cart = ({
-  isOpen,
-  items,
-  onClose,
-  onRemoveItem,
-  onContinue
-}: CartProps) => {
+const Cart = ({ onContinue }: CartProps) => {
+  const dispatch = useDispatch()
+  const { items, isOpen } = useSelector((state: RootReducer) => state.cart)
+
   const total = items.reduce((sum, item) => sum + item.price, 0)
+
+  const handleClose = () => {
+    dispatch(close())
+  }
+
+  const handleRemove = (id: number) => {
+    dispatch(remove(id))
+  }
 
   return (
     <>
-      <CartOverlay isOpen={isOpen} onClick={onClose} />
+      <CartOverlay isOpen={isOpen} onClick={handleClose} />
       <CartContainer isOpen={isOpen}>
-        {items.map((item) => (
-          <CartItem key={item.id}>
-            <CartItemImage>
-              <img src={item.image} alt={item.name} />
-            </CartItemImage>
-            <CartItemInfo>
-              <CartItemName>{item.name}</CartItemName>
-              <CartItemPrice>R$ {item.price.toFixed(2)}</CartItemPrice>
-            </CartItemInfo>
-            <RemoveButton onClick={() => onRemoveItem(item.id)}>
-              <img src="/images/lixeira.png" alt="Remover item" />
-            </RemoveButton>
-          </CartItem>
-        ))}
-        <CartTotal>
-          <span>Valor total</span>
-          <span>R$ {total.toFixed(2)}</span>
-        </CartTotal>
-        <CartButton onClick={onContinue}>Continuar com a entrega</CartButton>
+        {items.length === 0 ? (
+          <p style={{ color: '#FFEBD9', textAlign: 'center', padding: '20px' }}>
+            O carrinho está vazio
+          </p>
+        ) : (
+          <>
+            {items.map((item) => (
+              <CartItem key={item.id}>
+                <CartItemImage>
+                  <img src={item.image} alt={item.name} />
+                </CartItemImage>
+                <CartItemInfo>
+                  <CartItemName>{item.name}</CartItemName>
+                  <CartItemPrice>R$ {item.price.toFixed(2)}</CartItemPrice>
+                </CartItemInfo>
+                <RemoveButton onClick={() => handleRemove(item.id)}>
+                  <img src="/images/lixeira.png" alt="Remover item" />
+                </RemoveButton>
+              </CartItem>
+            ))}
+            <CartTotal>
+              <span>Valor total</span>
+              <span>R$ {total.toFixed(2)}</span>
+            </CartTotal>
+            <CartButton onClick={onContinue}>
+              Continuar com a entrega
+            </CartButton>
+          </>
+        )}
       </CartContainer>
     </>
   )

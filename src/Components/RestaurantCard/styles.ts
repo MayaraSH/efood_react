@@ -5,6 +5,10 @@ export const Card = styled.div`
   background-color: ${colors.white};
   border: 1px solid ${colors.coral};
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 `
 
 export const CardImage = styled.div`

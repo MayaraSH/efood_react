@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+
+import { RootReducer } from '../../store'
+import { add, open, close, clear } from '../../store/reducers/cart'
+import Cart from '../../Components/Cart'
 
 import { Container, ProductsContainer, ProductGrid, Loading } from './styles'
 import { getRestaurantById } from '../../services/api'
 import { Restaurant as RestaurantType, MenuItem } from '../../types'
-import Cart, { CartItemType } from '../../Components/Cart'
 import Checkout, { DeliveryData, PaymentData } from '../../Components/Checkout'
 import RestaurantHeader from '../../Components/RestaurantHeader'
 import ProductCard from '../../Components/ProductCard'
@@ -13,11 +17,12 @@ import ProductModal from '../../Components/ProductModal'
 
 const Restaurant = () => {
   const { id } = useParams<{ id: string }>()
+  const dispatch = useDispatch()
+  const { items } = useSelector((state: RootReducer) => state.cart)
+
   const [restaurant, setRestaurant] = useState<RestaurantType | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null)
-  const [cartItems, setCartItems] = useState<CartItemType[]>([])
-  const [isCartOpen, setIsCartOpen] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [checkoutStep, setCheckoutStep] = useState<
     'delivery' | 'payment' | 'confirmation'
@@ -51,30 +56,26 @@ const Restaurant = () => {
   }
 
   const handleAddToCart = (product: MenuItem) => {
-    const newItem: CartItemType = {
+    const newItem = {
       id: Date.now(),
       name: product.nome,
       price: product.preco,
       image: product.foto
     }
-    setCartItems([...cartItems, newItem])
+    dispatch(add(newItem))
     setSelectedProduct(null)
-    setIsCartOpen(true)
-  }
-
-  const handleRemoveFromCart = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
+    dispatch(open())
   }
 
   const handleContinueToDelivery = () => {
-    setIsCartOpen(false)
+    dispatch(close())
     setIsCheckoutOpen(true)
     setCheckoutStep('delivery')
   }
 
   const handleBackToCart = () => {
     setIsCheckoutOpen(false)
-    setIsCartOpen(true)
+    dispatch(open())
     setCheckoutStep('delivery')
   }
 
@@ -99,7 +100,7 @@ const Restaurant = () => {
 
   const handleFinishOrder = () => {
     setIsCheckoutOpen(false)
-    setCartItems([])
+    dispatch(clear())
     setCheckoutStep('delivery')
     setOrderId('')
   }
@@ -126,8 +127,8 @@ const Restaurant = () => {
         category={restaurant.tipo}
         name={restaurant.titulo}
         heroImage={restaurant.capa}
-        cartCount={cartItems.length}
-        onCartClick={() => setIsCartOpen(true)}
+        cartCount={items.length}
+        onCartClick={() => dispatch(open())}
       />
       <ProductsContainer>
         <ProductGrid>
@@ -156,13 +157,7 @@ const Restaurant = () => {
         />
       )}
 
-      <Cart
-        isOpen={isCartOpen}
-        items={cartItems}
-        onClose={() => setIsCartOpen(false)}
-        onRemoveItem={handleRemoveFromCart}
-        onContinue={handleContinueToDelivery}
-      />
+      <Cart onContinue={handleContinueToDelivery} />
 
       <Checkout
         isOpen={isCheckoutOpen}

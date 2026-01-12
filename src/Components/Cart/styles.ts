@@ -9,7 +9,7 @@ export const CartOverlay = styled.div<{ isOpen: boolean }>`
   height: 100%;
   background-color: ${colors.darkOverlay};
   display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
-  z-index: 999;
+  z-index: 2;
 `
 
 export const CartContainer = styled.div<{ isOpen: boolean }>`
@@ -21,7 +21,7 @@ export const CartContainer = styled.div<{ isOpen: boolean }>`
   background-color: ${colors.coral};
   padding: 32px 8px;
   transition: right 0.3s ease;
-  z-index: 1000;
+  z-index: 3;
   overflow-y: auto;
 
   @media (max-width: 768px) {
