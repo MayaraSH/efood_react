@@ -1,4 +1,8 @@
-import { useState } from 'react'
+import { InputHTMLAttributes, useState } from 'react'
+import { useSelector } from 'react-redux'
+import InputMask from 'react-input-mask'
+import { RootReducer } from '../../store'
+import { checkout, CheckoutPayload } from '../../services/api'
 import {
   CheckoutContainer,
   CheckoutOverlay,
@@ -9,7 +13,8 @@ import {
   Input,
   Row,
   SubmitButton,
-  BackButton
+  BackButton,
+  ErrorText
 } from './styles'
 
 interface CheckoutProps {
@@ -17,7 +22,7 @@ interface CheckoutProps {
   step: 'delivery' | 'payment' | 'confirmation'
   onBack: () => void
   onSubmitDelivery: (data: DeliveryData) => void
-  onSubmitPayment: (data: PaymentData) => void
+  onSubmitPayment: (data: PaymentData & { orderId?: string }) => void
   onFinish: () => void
   orderId?: string
 }
@@ -48,6 +53,11 @@ const Checkout = ({
   onFinish,
   orderId
 }: CheckoutProps) => {
+  const { items } = useSelector((state: RootReducer) => state.cart)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
+
   const [deliveryData, setDeliveryData] = useState<DeliveryData>({
     receiver: '',
     address: '',
@@ -65,14 +75,91 @@ const Checkout = ({
     expiresYear: ''
   })
 
-  const handleDeliverySubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmitDelivery(deliveryData)
+  const total = items.reduce((sum, item) => sum + item.price, 0)
+
+  // Validações
+  const isDeliveryValid = () => {
+    return (
+      deliveryData.receiver.trim() !== '' &&
+      deliveryData.address.trim() !== '' &&
+      deliveryData.city.trim() !== '' &&
+      deliveryData.cep.replace(/\D/g, '').length === 8 &&
+      deliveryData.number.trim() !== ''
+    )
   }
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const isPaymentValid = () => {
+    return (
+      paymentData.cardName.trim() !== '' &&
+      paymentData.cardNumber.replace(/\D/g, '').length === 16 &&
+      paymentData.cvv.replace(/\D/g, '').length === 3 &&
+      paymentData.expiresMonth.replace(/\D/g, '').length === 2 &&
+      paymentData.expiresYear.replace(/\D/g, '').length === 4
+    )
+  }
+
+  const handleDeliverySubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmitPayment(paymentData)
+    setAttemptedSubmit(true)
+
+    if (!isDeliveryValid()) {
+      return
+    }
+
+    onSubmitDelivery(deliveryData)
+    setAttemptedSubmit(false)
+  }
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAttemptedSubmit(true)
+
+    if (!isPaymentValid()) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Montar payload da API
+      const payload: CheckoutPayload = {
+        products: items.map((item) => ({
+          id: item.id,
+          price: item.price
+        })),
+        delivery: {
+          receiver: deliveryData.receiver,
+          address: {
+            description: deliveryData.address,
+            city: deliveryData.city,
+            zipCode: deliveryData.cep.replace(/\D/g, ''),
+            number: Number(deliveryData.number),
+            complement: deliveryData.complement
+          }
+        },
+        payment: {
+          card: {
+            name: paymentData.cardName,
+            number: paymentData.cardNumber.replace(/\D/g, ''),
+            code: Number(paymentData.cvv),
+            expires: {
+              month: Number(paymentData.expiresMonth),
+              year: Number(paymentData.expiresYear)
+            }
+          }
+        }
+      }
+
+      const response = await checkout(payload)
+      onSubmitPayment({ ...paymentData, orderId: response.orderId })
+      setAttemptedSubmit(false)
+    } catch (err) {
+      setError('Erro ao processar pagamento. Tente novamente.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -95,9 +182,13 @@ const Checkout = ({
                       receiver: e.target.value
                     })
                   }
+                  $hasError={
+                    attemptedSubmit && deliveryData.receiver.trim() === ''
+                  }
                   required
                 />
               </FormGroup>
+
               <FormGroup>
                 <Label htmlFor="address">Endereço</Label>
                 <Input
@@ -110,9 +201,13 @@ const Checkout = ({
                       address: e.target.value
                     })
                   }
+                  $hasError={
+                    attemptedSubmit && deliveryData.address.trim() === ''
+                  }
                   required
                 />
               </FormGroup>
+
               <FormGroup>
                 <Label htmlFor="city">Cidade</Label>
                 <Input
@@ -122,22 +217,37 @@ const Checkout = ({
                   onChange={(e) =>
                     setDeliveryData({ ...deliveryData, city: e.target.value })
                   }
+                  $hasError={attemptedSubmit && deliveryData.city.trim() === ''}
                   required
                 />
               </FormGroup>
+
               <Row>
                 <FormGroup>
                   <Label htmlFor="cep">CEP</Label>
-                  <Input
-                    id="cep"
-                    type="text"
+                  <InputMask
+                    mask="99999-999"
                     value={deliveryData.cep}
                     onChange={(e) =>
                       setDeliveryData({ ...deliveryData, cep: e.target.value })
                     }
-                    required
-                  />
+                  >
+                    {(inputProps: InputHTMLAttributes<HTMLInputElement>) => (
+                      <Input
+                        {...inputProps}
+                        id="cep"
+                        type="text"
+                        placeholder="00000-000"
+                        $hasError={
+                          attemptedSubmit &&
+                          deliveryData.cep.replace(/\D/g, '').length !== 8
+                        }
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </FormGroup>
+
                 <FormGroup>
                   <Label htmlFor="number">Número</Label>
                   <Input
@@ -150,10 +260,14 @@ const Checkout = ({
                         number: e.target.value
                       })
                     }
+                    $hasError={
+                      attemptedSubmit && deliveryData.number.trim() === ''
+                    }
                     required
                   />
                 </FormGroup>
               </Row>
+
               <FormGroup>
                 <Label htmlFor="complement">Complemento (opcional)</Label>
                 <Input
@@ -168,6 +282,7 @@ const Checkout = ({
                   }
                 />
               </FormGroup>
+
               <SubmitButton type="submit">
                 Continuar com o pagamento
               </SubmitButton>
@@ -180,7 +295,10 @@ const Checkout = ({
 
         {step === 'payment' && (
           <>
-            <CheckoutTitle>Pagamento - Valor a pagar R$ 190,90</CheckoutTitle>
+            <CheckoutTitle>
+              Pagamento - Valor a pagar R$ {total.toFixed(2)}
+            </CheckoutTitle>
+            {error && <ErrorText>{error}</ErrorText>}
             <Form onSubmit={handlePaymentSubmit}>
               <FormGroup>
                 <Label htmlFor="cardName">Nome no cartão</Label>
@@ -191,15 +309,19 @@ const Checkout = ({
                   onChange={(e) =>
                     setPaymentData({ ...paymentData, cardName: e.target.value })
                   }
+                  $hasError={
+                    attemptedSubmit && paymentData.cardName.trim() === ''
+                  }
                   required
+                  disabled={loading}
                 />
               </FormGroup>
+
               <Row>
                 <FormGroup>
                   <Label htmlFor="cardNumber">Número do cartão</Label>
-                  <Input
-                    id="cardNumber"
-                    type="text"
+                  <InputMask
+                    mask="9999 9999 9999 9999"
                     value={paymentData.cardNumber}
                     onChange={(e) =>
                       setPaymentData({
@@ -207,31 +329,57 @@ const Checkout = ({
                         cardNumber: e.target.value
                       })
                     }
-                    required
-                  />
+                    disabled={loading}
+                  >
+                    {(inputProps: InputHTMLAttributes<HTMLInputElement>) => (
+                      <Input
+                        {...inputProps}
+                        id="cardNumber"
+                        type="text"
+                        placeholder="0000 0000 0000 0000"
+                        $hasError={
+                          attemptedSubmit &&
+                          paymentData.cardNumber.replace(/\D/g, '').length !==
+                            16
+                        }
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </FormGroup>
+
                 <FormGroup>
                   <Label htmlFor="cvv">CVV</Label>
-                  <Input
-                    id="cvv"
-                    type="text"
-                    maxLength={3}
+                  <InputMask
+                    mask="999"
                     value={paymentData.cvv}
                     onChange={(e) =>
                       setPaymentData({ ...paymentData, cvv: e.target.value })
                     }
-                    required
-                  />
+                    disabled={loading}
+                  >
+                    {(inputProps: InputHTMLAttributes<HTMLInputElement>) => (
+                      <Input
+                        {...inputProps}
+                        id="cvv"
+                        type="text"
+                        placeholder="000"
+                        $hasError={
+                          attemptedSubmit &&
+                          paymentData.cvv.replace(/\D/g, '').length !== 3
+                        }
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </FormGroup>
               </Row>
+
               <Row>
                 <FormGroup>
                   <Label htmlFor="expiresMonth">Mês de vencimento</Label>
-                  <Input
-                    id="expiresMonth"
-                    type="text"
-                    maxLength={2}
-                    placeholder="MM"
+                  <InputMask
+                    mask="99"
                     value={paymentData.expiresMonth}
                     onChange={(e) =>
                       setPaymentData({
@@ -239,16 +387,29 @@ const Checkout = ({
                         expiresMonth: e.target.value
                       })
                     }
-                    required
-                  />
+                    disabled={loading}
+                  >
+                    {(inputProps: InputHTMLAttributes<HTMLInputElement>) => (
+                      <Input
+                        {...inputProps}
+                        id="expiresMonth"
+                        type="text"
+                        placeholder="MM"
+                        $hasError={
+                          attemptedSubmit &&
+                          paymentData.expiresMonth.replace(/\D/g, '').length !==
+                            2
+                        }
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </FormGroup>
+
                 <FormGroup>
                   <Label htmlFor="expiresYear">Ano de vencimento</Label>
-                  <Input
-                    id="expiresYear"
-                    type="text"
-                    maxLength={4}
-                    placeholder="AAAA"
+                  <InputMask
+                    mask="9999"
                     value={paymentData.expiresYear}
                     onChange={(e) =>
                       setPaymentData({
@@ -256,12 +417,30 @@ const Checkout = ({
                         expiresYear: e.target.value
                       })
                     }
-                    required
-                  />
+                    disabled={loading}
+                  >
+                    {(inputProps: InputHTMLAttributes<HTMLInputElement>) => (
+                      <Input
+                        {...inputProps}
+                        id="expiresYear"
+                        type="text"
+                        placeholder="AAAA"
+                        $hasError={
+                          attemptedSubmit &&
+                          paymentData.expiresYear.replace(/\D/g, '').length !==
+                            4
+                        }
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </FormGroup>
               </Row>
-              <SubmitButton type="submit">Finalizar pagamento</SubmitButton>
-              <BackButton type="button" onClick={onBack}>
+
+              <SubmitButton type="submit" disabled={loading}>
+                {loading ? 'Processando...' : 'Finalizar pagamento'}
+              </SubmitButton>
+              <BackButton type="button" onClick={onBack} disabled={loading}>
                 Voltar para a edição de endereço
               </BackButton>
             </Form>

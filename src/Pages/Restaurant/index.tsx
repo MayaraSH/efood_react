@@ -88,13 +88,15 @@ const Restaurant = () => {
     setCheckoutStep('payment')
   }
 
-  const handleSubmitPayment = (data: PaymentData) => {
+  const handleSubmitPayment = (data: PaymentData & { orderId?: string }) => {
     console.log('Payment data:', data)
-    const newOrderId = `ORDER_${Math.random()
-      .toString(36)
-      .substr(2, 9)
-      .toUpperCase()}`
-    setOrderId(newOrderId)
+    if (data.orderId) {
+      setOrderId(data.orderId)
+    } else {
+      setOrderId(
+        `ORDER_${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      )
+    }
     setCheckoutStep('confirmation')
   }
 

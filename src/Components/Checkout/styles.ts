@@ -55,17 +55,28 @@ export const Label = styled.label`
   margin-bottom: 8px;
 `
 
-export const Input = styled.input`
+export const Input = styled.input<{ $hasError?: boolean }>`
   padding: 8px;
   font-size: 14px;
-  border: none;
+  border: ${({ $hasError }) => ($hasError ? '2px solid #ff0000' : 'none')};
   background-color: ${colors.lightCream};
   color: ${colors.text};
   max-width: 100%;
   width: 100%;
+  transition: border 0.2s ease;
 
   &::placeholder {
     color: ${colors.text};
+  }
+
+  &:focus {
+    outline: none;
+    border: 2px solid
+      ${({ $hasError }) => ($hasError ? '#ff0000' : colors.coral)};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 `
 
@@ -73,6 +84,10 @@ export const Row = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 34px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `
 
 export const SubmitButton = styled.button`
@@ -85,6 +100,11 @@ export const SubmitButton = styled.button`
   border: none;
   cursor: pointer;
   margin-top: 24px;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 `
 
 export const BackButton = styled.button`
@@ -97,4 +117,19 @@ export const BackButton = styled.button`
   border: none;
   cursor: pointer;
   margin-top: 8px;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+`
+
+export const ErrorText = styled.p`
+  color: ${colors.lightCream};
+  background: rgba(255, 0, 0, 0.3);
+  padding: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 0, 0.5);
 `

@@ -1,6 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { RootReducer } from '../../store'
 import { close, remove } from '../../store/reducers/cart'
+
 import {
   CartOverlay,
   CartContainer,
@@ -11,7 +12,8 @@ import {
   CartItemPrice,
   RemoveButton,
   CartTotal,
-  CartButton
+  CartButton,
+  CloseButton
 } from './styles'
 
 interface CartProps {
@@ -36,9 +38,12 @@ const Cart = ({ onContinue }: CartProps) => {
     <>
       <CartOverlay isOpen={isOpen} onClick={handleClose} />
       <CartContainer isOpen={isOpen}>
+        <CloseButton onClick={handleClose}>✕</CloseButton>
+
         {items.length === 0 ? (
           <p style={{ color: '#FFEBD9', textAlign: 'center', padding: '20px' }}>
-            O carrinho está vazio
+            O carrinho está vazio, adicione pelo menos um produto para continuar
+            com a compra.
           </p>
         ) : (
           <>

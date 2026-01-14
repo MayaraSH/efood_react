@@ -105,3 +105,18 @@ export const CartButton = styled.button`
   cursor: pointer;
   margin-bottom: 8px;
 `
+export const CloseButton = styled.button`
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  font-size: 16px;
+  color: ${colors.lightCream};
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+`
