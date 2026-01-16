@@ -77,7 +77,6 @@ const Checkout = ({
 
   const total = items.reduce((sum, item) => sum + item.price, 0)
 
-  // Validações
   const isDeliveryValid = () => {
     return (
       deliveryData.receiver.trim() !== '' &&
@@ -122,7 +121,6 @@ const Checkout = ({
     setError(null)
 
     try {
-      // Montar payload da API
       const payload: CheckoutPayload = {
         products: items.map((item) => ({
           id: item.id,

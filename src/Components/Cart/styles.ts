@@ -28,6 +28,11 @@ export const CartContainer = styled.div<{ isOpen: boolean }>`
     width: 100%;
     right: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
   }
+
+  @media (min-width: 768px) and (max-width: 1024px) {
+    width: 50%;
+    right: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
+  }
 `
 
 export const CartItem = styled.div`
